@@ -2,20 +2,21 @@
   "use strict";
 
   const QUESTION_TIME_MS = 10000;
-  const TOTAL_LIVES = 3;
-  const BEST_SCORE_KEY = "oxQuizBestScore";
+  const TOP_SCORES_KEY = "oxQuizTopScores";
+  const MAX_RANK = 3;
+  const RANK_MEDALS = ["🥇", "🥈", "🥉"];
   const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 45; // r=45
 
   // ---------- DOM ----------
   const startScreen = document.getElementById("start-screen");
   const gameScreen = document.getElementById("game-screen");
+  const nameScreen = document.getElementById("name-screen");
   const gameoverScreen = document.getElementById("gameover-screen");
 
   const startBtn = document.getElementById("start-btn");
   const retryBtn = document.getElementById("retry-btn");
   const startBestEl = document.getElementById("start-best");
 
-  const heartsEl = document.getElementById("hearts");
   const gaugeFg = document.getElementById("gauge-fg");
   const scoreEl = document.getElementById("score");
   const questionTextEl = document.getElementById("question-text");
@@ -27,14 +28,16 @@
   const effectOverlay = document.getElementById("effect-overlay");
   const effectEmoji = document.getElementById("effect-emoji");
 
+  const nameScoreEl = document.getElementById("name-score");
+  const nameInput = document.getElementById("name-input");
+  const nameConfirmBtn = document.getElementById("name-confirm-btn");
+
   const gameoverTitle = document.getElementById("gameover-title");
   const gameoverMessage = document.getElementById("gameover-message");
   const finalScoreEl = document.getElementById("final-score");
-  const finalBestEl = document.getElementById("final-best");
-  const newRecordEl = document.getElementById("new-record");
+  const rankTableEl = document.getElementById("rank-table");
 
   // ---------- 상태 ----------
-  let lives = TOTAL_LIVES;
   let score = 0;
   let currentQuestion = null;
   let answered = false;
@@ -141,19 +144,63 @@
     });
   }
 
-  // ---------- 하트 렌더 ----------
-  function renderHearts(previousLives) {
-    heartsEl.innerHTML = "";
-    for (let i = 0; i < TOTAL_LIVES; i++) {
-      const span = document.createElement("span");
-      span.className = "heart";
-      const filled = i < lives;
-      span.textContent = filled ? "❤️" : "🤍";
-      if (previousLives !== undefined && i === lives && i < previousLives) {
-        span.classList.add("lost");
-      }
-      heartsEl.appendChild(span);
+  // ---------- TOP3 랭킹 저장 ----------
+  function getTopScores() {
+    try {
+      const raw = localStorage.getItem(TOP_SCORES_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(arr)) return [];
+      return arr.filter((e) => e && typeof e.score === "number" && typeof e.name === "string");
+    } catch (e) {
+      return [];
     }
+  }
+
+  function saveTopScores(list) {
+    localStorage.setItem(TOP_SCORES_KEY, JSON.stringify(list));
+  }
+
+  function qualifiesForTopScores(list, candidateScore) {
+    if (list.length < MAX_RANK) return true;
+    return candidateScore > list[list.length - 1].score;
+  }
+
+  function insertTopScore(list, entry) {
+    const newList = list.concat([entry]);
+    newList.sort((a, b) => b.score - a.score);
+    return newList.slice(0, MAX_RANK);
+  }
+
+  function renderRankTable(list, highlightIndex) {
+    rankTableEl.innerHTML = "";
+    if (list.length === 0) {
+      const row = document.createElement("div");
+      row.className = "rank-row empty";
+      row.textContent = "아직 기록이 없어요";
+      rankTableEl.appendChild(row);
+      return;
+    }
+    list.forEach((entry, i) => {
+      const row = document.createElement("div");
+      row.className = "rank-row" + (i === highlightIndex ? " new" : "");
+
+      const medal = document.createElement("span");
+      medal.className = "rank-medal";
+      medal.textContent = RANK_MEDALS[i] || "🎖️";
+
+      const name = document.createElement("span");
+      name.className = "rank-name";
+      name.textContent = entry.name;
+
+      const points = document.createElement("span");
+      points.className = "rank-score";
+      points.textContent = `${entry.score}개`;
+
+      row.appendChild(medal);
+      row.appendChild(name);
+      row.appendChild(points);
+      rankTableEl.appendChild(row);
+    });
   }
 
   // ---------- 게이지 타이머 ----------
@@ -246,15 +293,11 @@
     btnX.disabled = true;
 
     const isCorrect = choice === currentQuestion.a;
-    const previousLives = lives;
 
     if (isCorrect) {
       score++;
       scoreEl.textContent = String(score);
-    } else {
-      lives--;
     }
-    renderHearts(previousLives);
 
     await showEffect(isCorrect);
 
@@ -268,10 +311,10 @@
     await speak(fullExplain);
     await wait(500);
 
-    if (lives <= 0) {
-      endGame();
-    } else {
+    if (isCorrect) {
       showQuestion();
+    } else {
+      endGame();
     }
   }
 
@@ -281,41 +324,56 @@
 
   // ---------- 화면 전환 ----------
   function showScreen(screen) {
-    [startScreen, gameScreen, gameoverScreen].forEach((s) => s.classList.add("hidden"));
+    [startScreen, gameScreen, nameScreen, gameoverScreen].forEach((s) => s.classList.add("hidden"));
     screen.classList.remove("hidden");
-  }
-
-  function getBestScore() {
-    const v = parseInt(localStorage.getItem(BEST_SCORE_KEY), 10);
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  function setBestScore(v) {
-    localStorage.setItem(BEST_SCORE_KEY, String(v));
   }
 
   function startGame() {
     getAudioCtx();
-    lives = TOTAL_LIVES;
     score = 0;
     scoreEl.textContent = "0";
-    renderHearts();
     showScreen(gameScreen);
     showQuestion();
   }
 
   function endGame() {
     window.speechSynthesis && window.speechSynthesis.cancel();
-    const best = getBestScore();
-    const isNewRecord = score > best;
-    if (isNewRecord) setBestScore(score);
+    const topScores = getTopScores();
 
+    if (qualifiesForTopScores(topScores, score)) {
+      showNameScreen();
+    } else {
+      showResultScreen(topScores, null);
+    }
+  }
+
+  function showNameScreen() {
+    nameScoreEl.textContent = String(score);
+    nameInput.value = "";
+    showScreen(nameScreen);
+    speak(`${score}개를 맞혀서 TOP3에 들었어요! 이름을 입력해주세요`);
+    setTimeout(() => nameInput.focus(), 100);
+  }
+
+  function submitName() {
+    const rawName = nameInput.value.trim();
+    const name = rawName ? rawName.slice(0, 6) : "이름없음";
+    const entry = { name, score };
+
+    const updated = insertTopScore(getTopScores(), entry);
+    saveTopScores(updated);
+
+    const newIndex = updated.indexOf(entry);
+    showResultScreen(updated, newIndex);
+  }
+
+  function showResultScreen(topScores, newIndex) {
     finalScoreEl.textContent = String(score);
-    finalBestEl.textContent = String(isNewRecord ? score : best);
-    newRecordEl.classList.toggle("hidden", !isNewRecord);
+    renderRankTable(topScores, newIndex);
 
-    if (isNewRecord) {
-      gameoverTitle.textContent = "🎉 신기록이에요! 🎉";
+    const madeTop3 = newIndex !== null;
+    if (madeTop3) {
+      gameoverTitle.textContent = "🎉 TOP3 진입! 🎉";
       gameoverMessage.textContent = "정말 잘했어요! 대단해요!";
     } else {
       gameoverTitle.textContent = "🎈 잘했어요! 🎈";
@@ -323,9 +381,11 @@
     }
 
     showScreen(gameoverScreen);
-    speak(isNewRecord
-      ? `신기록이에요! ${score}개를 맞혔어요! 정말 잘했어요!`
+    speak(madeTop3
+      ? `TOP3에 들었어요! ${score}개를 맞혔어요! 정말 잘했어요!`
       : `${score}개를 맞혔어요. 괜찮아요, 잘했어요! 다시 도전해볼까요?`);
+
+    startBestEl.textContent = String(getTopScores()[0] ? getTopScores()[0].score : 0);
   }
 
   // ---------- 이벤트 ----------
@@ -333,7 +393,11 @@
   retryBtn.addEventListener("click", startGame);
   btnO.addEventListener("click", () => handleAnswer("O"));
   btnX.addEventListener("click", () => handleAnswer("X"));
+  nameConfirmBtn.addEventListener("click", submitName);
+  nameInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitName();
+  });
 
   // ---------- 초기화 ----------
-  startBestEl.textContent = String(getBestScore());
+  startBestEl.textContent = String(getTopScores()[0] ? getTopScores()[0].score : 0);
 })();

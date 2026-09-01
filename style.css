@@ -9,8 +9,6 @@
   --x-color-dark: #e85f5f;
   --accent: #ffb84d;
   --accent-dark: #ff9f1c;
-  --heart-full: #ff6b81;
-  --heart-empty: #e5dfe8;
   --gauge-track: #eee3d3;
   --gauge-fill: #34c76f;
   --gauge-fill-warn: #ff9f43;
@@ -132,26 +130,6 @@ body {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
-}
-
-.hearts {
-  font-size: clamp(20px, 6vw, 28px);
-  display: flex;
-  gap: 4px;
-  min-width: 90px;
-}
-
-.heart {
-  transition: transform 0.2s ease;
-}
-
-.heart.lost {
-  animation: heart-pop 0.4s ease;
-}
-
-@keyframes heart-pop {
-  0% { transform: scale(1.4); }
-  100% { transform: scale(1); }
 }
 
 .gauge-wrap {
@@ -345,17 +323,14 @@ body {
 }
 
 /* ---------- 결과 화면 ---------- */
-.result-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
 .result-box {
-  flex: 1;
   background: #f7f4fb;
   border-radius: 18px;
   padding: 14px 8px;
+}
+
+.result-box-solo {
+  margin-bottom: 20px;
 }
 
 .result-label {
@@ -370,18 +345,80 @@ body {
   color: var(--text-main);
 }
 
-.new-record {
-  font-size: clamp(16px, 4.5vw, 20px);
-  font-weight: 800;
-  color: var(--accent-dark);
-  margin-bottom: 20px;
-  animation: bounce-in 0.5s ease;
-}
-
 @keyframes bounce-in {
   0% { transform: scale(0.7); opacity: 0; }
   60% { transform: scale(1.1); opacity: 1; }
   100% { transform: scale(1); }
+}
+
+/* ---------- TOP3 순위표 ---------- */
+.rank-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f7f4fb;
+  border-radius: 16px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.rank-row.new {
+  background: #fff3d6;
+  outline: 3px solid var(--accent);
+  animation: bounce-in 0.5s ease;
+}
+
+.rank-row.empty {
+  color: #b3acbe;
+  justify-content: center;
+}
+
+.rank-medal {
+  font-size: clamp(20px, 5.5vw, 26px);
+  flex-shrink: 0;
+}
+
+.rank-name {
+  flex: 1;
+  font-weight: 800;
+  font-size: clamp(15px, 4.2vw, 18px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-score {
+  font-weight: 900;
+  font-size: clamp(15px, 4.2vw, 18px);
+  color: var(--o-color-dark);
+  flex-shrink: 0;
+}
+
+/* ---------- 이름 입력 화면 ---------- */
+.name-input {
+  display: block;
+  width: 100%;
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 700;
+  text-align: center;
+  padding: 16px 12px;
+  border: 3px solid #e5dfe8;
+  border-radius: 18px;
+  margin-bottom: 20px;
+  color: var(--text-main);
+  background: #faf9fc;
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 @media (min-width: 700px) {
