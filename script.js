@@ -3,6 +3,7 @@
 
   const QUESTION_TIME_MS = 20000;
   const TOP_SCORES_KEY = "oxQuizTopScores";
+  const LAST_NAME_KEY = "oxQuizLastName";
   const MAX_RANK = 3;
   const RANK_MEDALS = ["🥇", "🥈", "🥉"];
   const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 45; // r=45
@@ -350,17 +351,35 @@
     }
   }
 
+  function getLastName() {
+    try {
+      return localStorage.getItem(LAST_NAME_KEY) || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function saveLastName(name) {
+    try {
+      localStorage.setItem(LAST_NAME_KEY, name);
+    } catch (e) { /* noop */ }
+  }
+
   function showNameScreen() {
     nameScoreEl.textContent = String(score);
-    nameInput.value = "";
+    nameInput.value = getLastName();
     showScreen(nameScreen);
     speak(`${score}개를 맞혀서 TOP3에 들었어요! 이름을 입력해주세요`);
-    setTimeout(() => nameInput.focus(), 100);
+    setTimeout(() => {
+      nameInput.focus();
+      nameInput.select();
+    }, 100);
   }
 
   function submitName() {
     const rawName = nameInput.value.trim();
     const name = rawName ? rawName.slice(0, 6) : "이름없음";
+    saveLastName(name);
     const entry = { name, score };
 
     const updated = insertTopScore(getTopScores(), entry);
