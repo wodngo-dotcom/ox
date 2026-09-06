@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OX 퀴즈</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 시작 화면 -->
+  <section id="start-screen" class="screen">
+    <div class="start-card">
+      <h1 class="logo">⭕ OX 퀴즈 ❌</h1>
+      <p class="subtitle">문제를 잘 듣고<br>O 또는 X를 눌러보세요!</p>
+      <div class="best-badge">
+        🏆 1위 기록 <span id="start-best">0</span>개
+      </div>
+      <button id="start-btn" class="big-btn start-color">시작하기</button>
+    </div>
+  </section>
+
+  <!-- 게임 화면 -->
+  <section id="game-screen" class="screen hidden">
+    <div class="top-bar">
+      <div class="gauge-wrap">
+        <svg class="gauge" viewBox="0 0 100 100">
+          <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+          <circle class="gauge-fg" id="gauge-fg" cx="50" cy="50" r="45"></circle>
+        </svg>
+      </div>
+      <div class="score-badge">✅ <span id="score">0</span></div>
+    </div>
+
+    <div class="question-area">
+      <p id="question-text" class="question-text"></p>
+    </div>
+
+    <div class="answer-buttons">
+      <button id="btn-o" class="answer-btn o-btn" aria-label="O 정답">O</button>
+      <button id="btn-x" class="answer-btn x-btn" aria-label="X 정답">X</button>
+    </div>
+
+    <div id="explain-box" class="explain-box hidden">
+      <p id="explain-badge" class="explain-badge"></p>
+      <p id="explain-text" class="explain-text"></p>
+    </div>
+
+    <div id="effect-overlay" class="effect-overlay hidden">
+      <div id="effect-emoji" class="effect-emoji"></div>
+    </div>
+  </section>
+
+  <!-- 이름 입력 화면 (TOP3 진입 시) -->
+  <section id="name-screen" class="screen hidden">
+    <div class="start-card">
+      <h1 class="logo">🎉 TOP3 진입! 🎉</h1>
+      <p class="subtitle">이번 점수 <span id="name-score">0</span>개!<br>이름을 입력해주세요</p>
+      <input id="name-input" class="name-input" type="text" maxlength="6" placeholder="이름" autocomplete="off" inputmode="text">
+      <button id="name-confirm-btn" class="big-btn start-color">확인</button>
+    </div>
+  </section>
+
+  <!-- 게임오버 화면 -->
+  <section id="gameover-screen" class="screen hidden">
+    <div class="start-card">
+      <h1 id="gameover-title" class="logo">🎈 잘했어요! 🎈</h1>
+      <p id="gameover-message" class="subtitle">괜찮아요, 다시 도전해볼까요?</p>
+      <div class="result-box result-box-solo">
+        <div class="result-label">이번 점수</div>
+        <div class="result-value"><span id="final-score">0</span>개</div>
+      </div>
+      <div class="rank-table" id="rank-table"></div>
+      <button id="retry-btn" class="big-btn start-color">다시하기</button>
+    </div>
+  </section>
+
+</div>
+<script src="questions.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
