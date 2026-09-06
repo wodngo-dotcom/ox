@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const QUESTION_TIME_MS = 10000;
+  const QUESTION_TIME_MS = 20000;
   const TOP_SCORES_KEY = "oxQuizTopScores";
   const MAX_RANK = 3;
   const RANK_MEDALS = ["🥇", "🥈", "🥉"];
@@ -230,12 +230,15 @@
     answered = false;
     startGaugeCountdown();
 
+    const totalTicks = QUESTION_TIME_MS / 1000;
+    const warnAtTick = Math.round(totalTicks * 0.7);
+    const dangerAtTick = Math.round(totalTicks * 0.9);
     let tickCount = 0;
     tickIntervalId = setInterval(() => {
       tickCount++;
       playTick();
-      if (tickCount === 7) gaugeFg.classList.add("warn");
-      if (tickCount === 9) gaugeFg.classList.add("danger");
+      if (tickCount === warnAtTick) gaugeFg.classList.add("warn");
+      if (tickCount === dangerAtTick) gaugeFg.classList.add("danger");
     }, 1000);
 
     timeoutId = setTimeout(() => {
