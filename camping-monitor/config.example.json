@@ -1,0 +1,32 @@
+{
+  "place_id": "1126871443",
+  "checkin": "20261030",
+  "checkout": "20261101",
+  "guests": 3,
+
+  "page_url": "https://m.place.naver.com/accommodation/{place_id}/home?entry=plt&businessCategory=camping&level=top&guest={guests}&checkin={checkin}&checkout={checkout}",
+
+  "ntfy_server": "https://ntfy.sh",
+  "ntfy_topic": "CHANGE-ME-camping-1030-xxxxxx",
+
+  "interval_sec": 300,
+  "jitter_sec": 120,
+
+  "mode": "dom",
+
+  "dom": {
+    "closed_keywords": ["마감", "매진", "예약불가", "예약 불가", "만실", "판매종료"],
+    "available_keywords": ["예약하기", "예약 가능", "예약가능", "잔여", "남음"],
+    "page_closed_keywords": ["예약 가능한 객실이 없", "예약 가능한 상품이 없", "선택한 날짜에 예약 가능한"]
+  },
+
+  "api": {
+    "request_file": "discovery/selected_request.json",
+    "items_path": "",
+    "name_field": "name",
+    "available_if": { "field": "isAvailable", "op": "==", "value": true }
+  },
+
+  "state_file": "state.json",
+  "debug_dir": "debug"
+}
