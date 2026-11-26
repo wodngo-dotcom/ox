@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>맞팔 확인기 · 인스타그램 언팔로워 체크</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --text: #1f2328;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #d6249f;
+    --accent2: #285aeb;
+    --danger: #e11d48;
+    --ok: #16a34a;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --card: #181b21;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --line: #2a2f37;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 {
+    font-size: 1.5rem; margin: 8px 0 4px;
+    background: linear-gradient(45deg, #f09433, #dc2743, #bc1888, #285aeb);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: .95rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  }
+  .drop {
+    display: block; border: 2px dashed var(--line); border-radius: var(--radius);
+    padding: 28px 16px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop.over { border-color: var(--accent); background: rgba(214,36,159,.06); }
+  .drop .big { font-size: 2rem; }
+  .drop strong { display: block; margin: 6px 0 2px; }
+  .drop small { color: var(--muted); }
+  #file { display: none; }
+  .privacy { font-size: .85rem; color: var(--muted); margin-top: 10px; }
+  .files { margin: 10px 0 0; padding: 0; list-style: none; font-size: .85rem; }
+  .files li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .files li:last-child { border-bottom: 0; }
+  .files .tag { color: var(--muted); white-space: nowrap; }
+  .msg { font-size: .9rem; margin-top: 10px; }
+  .msg.err { color: var(--danger); }
+  .msg.warn { color: #b45309; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button {
+    font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 10px; padding: 10px 14px; cursor: pointer; min-height: 44px;
+  }
+  button.primary { background: linear-gradient(45deg, #dc2743, #bc1888); border: 0; color: #fff; font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 8px; text-align: center; }
+  .stat .n { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: .8rem; color: var(--muted); }
+  .stat.hl .n { color: var(--danger); }
+  .tools { display: flex; gap: 8px; align-items: center; }
+  .tools input {
+    flex: 1; min-width: 0; font: inherit; padding: 10px 12px; min-height: 44px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text);
+  }
+  .count { font-size: .85rem; color: var(--muted); margin: 10px 2px 4px; }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li {
+    display: flex; align-items: center; gap: 10px; padding: 10px 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  ul.list li:last-child { border-bottom: 0; }
+  .avatar {
+    flex: 0 0 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);
+    color: #fff; display: grid; place-items: center; font-weight: 700; font-size: .9rem;
+    text-transform: uppercase;
+  }
+  .who { flex: 1; min-width: 0; }
+  .who a { color: var(--text); font-weight: 600; text-decoration: none; word-break: break-all; }
+  .who a:hover { text-decoration: underline; }
+  .who .d { font-size: .8rem; color: var(--muted); }
+  .go { font-size: .85rem; color: var(--accent2); text-decoration: none; white-space: nowrap; padding: 8px 4px; }
+  .empty { text-align: center; color: var(--muted); padding: 24px 0; }
+  .hidden { display: none !important; }
+  details { font-size: .9rem; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details ol { padding-left: 20px; margin: 8px 0 0; color: var(--muted); }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: #111; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: .9rem;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: .92; }
+  @media (max-width: 420px) {
+    .stat .n { font-size: 1.25rem; }
+    .wrap { padding: 16px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>맞팔 확인기</h1>
+  <p class="sub">인스타그램에서 내가 팔로우하지만 나를 팔로우하지 않는 계정을 찾아줘요.</p>
+
+  <div class="card">
+    <label class="drop" id="drop" for="file">
+      <div class="big">📦</div>
+      <strong>ZIP 또는 JSON 파일 선택</strong>
+      <small>여기로 끌어다 놓아도 돼요 · followers_1.json, following.json 등 여러 개 선택 가능</small>
+    </label>
+    <input type="file" id="file" multiple accept=".zip,.json,application/zip,application/json">
+    <ul class="files" id="files"></ul>
+    <div class="msg" id="msg"></div>
+    <div class="row hidden" id="resetRow">
+      <button type="button" id="reset">파일 모두 지우기</button>
+    </div>
+    <p class="privacy">🔒 파일은 이 브라우저 안에서만 읽고 처리해요. 어디에도 업로드되지 않아요.</p>
+  </div>
+
+  <section id="result" class="hidden">
+    <div class="stats">
+      <div class="stat"><div class="n" id="nFollowers">0</div><div class="l">팔로워</div></div>
+      <div class="stat"><div class="n" id="nFollowing">0</div><div class="l">팔로잉</div></div>
+      <div class="stat hl"><div class="n" id="nNot">0</div><div class="l">맞팔 안 함</div></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="tools">
+        <input type="search" id="q" placeholder="아이디 검색" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button type="button" class="primary" id="copy">목록 복사</button>
+      </div>
+      <div class="count" id="count"></div>
+      <ul class="list" id="list"></ul>
+      <div class="empty hidden" id="empty"></div>
+    </div>
+  </section>
+
+  <div class="card">
+    <details>
+      <summary>파일은 어떻게 받나요?</summary>
+      <ol>
+        <li>인스타그램 앱 → 프로필 → ☰ → <b>계정 센터</b></li>
+        <li><b>내 정보 및 권한</b> → <b>내 정보 내보내기</b></li>
+        <li>내보내기 만들기 → 기기로 내보내기</li>
+        <li>정보 맞춤 설정에서 <b>팔로워 및 팔로잉</b>만 선택</li>
+        <li>형식은 꼭 <b>JSON</b>, 기간은 <b>전체 기간</b>으로 선택</li>
+        <li>준비 완료 알림이 오면 ZIP을 다운로드해서 여기에 올리기</li>
+      </ol>
+    </details>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // 파일 이름 → { kind: 'followers'|'following', items: [{id, ts}] }
+  const sources = new Map();
+  let notFollowingBack = [];
+
+  const $ = (id) => document.getElementById(id);
+  const fileInput = $("file"), drop = $("drop"), msg = $("msg");
+
+  // ---------- 파싱 ----------
+  const baseName = (p) => p.split(/[\\/]/).pop().toLowerCase();
+  const isFollowersName = (n) => /^followers(_\d+)?\.json$/.test(n);
+  const isFollowingName = (n) => /^following\.json$/.test(n);
+
+  function idFromHref(href) {
+    if (!href || typeof href !== "string") return "";
+    let s = href.split(/[?#]/)[0].replace(/\/+$/, "");
+    const last = s.split("/").pop() || "";
+    try { return decodeURIComponent(last); } catch (e) { return last; }
+  }
+
+  function extractId(entry) {
+    const sld = (entry && Array.isArray(entry.string_list_data)) ? entry.string_list_data : [];
+    const d = sld[0] || {};
+    let id = (d.value || "").trim();
+    if (!id) id = (entry.title || "").trim();
+    if (!id) id = idFromHref(d.href).trim();
+    id = id.replace(/^@/, "");
+    const ts = Number(d.timestamp || entry.timestamp || 0) || 0;
+    return id ? { id, ts } : null;
+  }
+
+  // 배열이면 그대로, 객체면 relationships_* 키 또는 첫 번째 배열 값을 사용
+  function toEntries(json) {
+    if (Array.isArray(json)) return json;
+    if (json && typeof json === "object") {
+      for (const k of Object.keys(json)) {
+        if (/^relationships_/.test(k) && Array.isArray(json[k])) return json[k];
+      }
+      for (const k of Object.keys(json)) {
+        if (Array.isArray(json[k])) return json[k];
+      }
+    }
+    return [];
+  }
+
+  function guessKind(name, json) {
+    if (isFollowingName(name)) return "following";
+    if (isFollowersName(name)) return "followers";
+    if (json && !Array.isArray(json)) {
+      if (Array.isArray(json.relationships_following)) return "following";
+      if (Array.isArray(json.relationships_followers)) return "followers";
+    }
+    return null;
+  }
+
+  function addJson(path, text) {
+    const name = baseName(path);
+    let json;
+    try { json = JSON.parse(text); }
+    catch (e) { throw new Error(name + ": JSON 형식이 아니에요"); }
+    const kind = guessKind(name, json);
+    if (!kind) return false;
+    const items = toEntries(json).map(extractId).filter(Boolean);
+    sources.set(name, { kind, items });
+    return true;
+  }
+
+  async function addZip(file) {
+    if (typeof JSZip === "undefined") {
+      throw new Error("ZIP 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인하거나, ZIP을 풀어서 JSON 파일을 직접 올려주세요.");
+    }
+    const zip = await JSZip.loadAsync(file);
+    const targets = [];
+    zip.forEach((path, entry) => {
+      if (entry.dir) return;
+      const n = baseName(path);
+      if (isFollowersName(n) || isFollowingName(n)) targets.push(entry);
+    });
+    if (!targets.length) {
+      const hasHtml = Object.keys(zip.files).some((p) => /followers_and_following\/.*\.html$/i.test(p));
+      throw new Error(hasHtml
+        ? "ZIP이 HTML 형식으로 내보내졌어요. 내보내기 형식을 JSON으로 다시 요청해주세요."
+        : "ZIP 안에서 followers / following JSON 파일을 찾지 못했어요.");
+    }
+    // ZIP 하나 안에 같은 이름이 여러 경로에 있으면 마지막 것이 사용됨
+    for (const entry of targets) {
+      addJson(entry.name, await entry.async("string"));
+    }
+  }
+
+  async function handleFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    setMsg("파일 읽는 중…");
+    const errors = [];
+    const skipped = [];
+    for (const f of files) {
+      try {
+        if (/\.zip$/i.test(f.name) || f.type === "application/zip" || f.type === "application/x-zip-compressed") {
+          await addZip(f);
+        } else if (/\.json$/i.test(f.name) || f.type === "application/json") {
+          if (!addJson(f.name, await f.text())) skipped.push(f.name);
+        } else {
+          skipped.push(f.name);
+        }
+      } catch (e) {
+        errors.push(e.message || String(e));
+      }
+    }
+    fileInput.value = "";
+    render();
+    const notes = [];
+    if (skipped.length) notes.push("팔로워/팔로잉 파일이 아니라서 건너뜀: " + skipped.join(", "));
+    if (errors.length) setMsg(errors.concat(notes).join("\n"), "err");
+    else if (notes.length) setMsg(notes.join("\n"), "warn");
+  }
+
+  // ---------- 계산 / 렌더 ----------
+  function compute() {
+    const followers = new Set();
+    const following = new Map(); // lower id → {id, ts}
+    for (const { kind, items } of sources.values()) {
+      for (const it of items) {
+        const key = it.id.toLowerCase();
+        if (kind === "followers") followers.add(key);
+        else {
+          const prev = following.get(key);
+          if (!prev || it.ts > prev.ts) following.set(key, it);
+        }
+      }
+    }
+    const not = [];
+    for (const [key, it] of following) if (!followers.has(key)) not.push(it);
+    not.sort((a, b) => (b.ts - a.ts) || a.id.localeCompare(b.id));
+    return { followers: followers.size, following: following.size, not };
+  }
+
+  function fmtDate(ts) {
+    if (!ts) return "날짜 정보 없음";
+    const d = new Date(ts * 1000);
+    const p = (n) => String(n).padStart(2, "0");
+    return d.getFullYear() + "." + p(d.getMonth() + 1) + "." + p(d.getDate()) + " 팔로우";
+  }
+
+  function render() {
+    // 파일 목록
+    const ul = $("files");
+    ul.textContent = "";
+    const names = Array.from(sources.keys()).sort();
+    for (const n of names) {
+      const s = sources.get(n);
+      const li = document.createElement("li");
+      const a = document.createElement("span"); a.textContent = n;
+      const b = document.createElement("span"); b.className = "tag";
+      b.textContent = (s.kind === "followers" ? "팔로워 " : "팔로잉 ") + s.items.length.toLocaleString() + "명";
+      li.append(a, b); ul.appendChild(li);
+    }
+    $("resetRow").classList.toggle("hidden", names.length === 0);
+
+    const kinds = new Set(Array.from(sources.values()).map((s) => s.kind));
+    if (!kinds.has("followers") || !kinds.has("following")) {
+      $("result").classList.add("hidden");
+      if (names.length) {
+        setMsg(!kinds.has("following")
+          ? "following.json 파일도 올려주세요."
+          : "followers_1.json 파일도 올려주세요.", "warn");
+      } else setMsg("");
+      return;
+    }
+
+    const r = compute();
+    notFollowingBack = r.not;
+    $("nFollowers").textContent = r.followers.toLocaleString();
+    $("nFollowing").textContent = r.following.toLocaleString();
+    $("nNot").textContent = r.not.length.toLocaleString();
+    $("result").classList.remove("hidden");
+    const multi = names.filter(isFollowersName).length;
+    setMsg(multi > 1 ? "팔로워 파일 " + multi + "개를 합쳐서 계산했어요." : "");
+    renderList();
+  }
+
+  function filtered() {
+    const q = $("q").value.trim().toLowerCase().replace(/^@/, "");
+    return q ? notFollowingBack.filter((it) => it.id.toLowerCase().includes(q)) : notFollowingBack;
+  }
+
+  function renderList() {
+    const items = filtered();
+    const list = $("list");
+    list.textContent = "";
+    const frag = document.createDocumentFragment();
+    for (const it of items) {
+      const url = "https://www.instagram.com/" + encodeURIComponent(it.id) + "/";
+      const li = document.createElement("li");
+      const av = document.createElement("div"); av.className = "avatar";
+      av.textContent = (it.id.match(/[a-z0-9]/i) || [it.id[0]])[0];
+      const who = document.createElement("div"); who.className = "who";
+      const a = document.createElement("a");
+      a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = it.id;
+      const d = document.createElement("div"); d.className = "d"; d.textContent = fmtDate(it.ts);
+      who.append(a, d);
+      const go = document.createElement("a");
+      go.className = "go"; go.href = url; go.target = "_blank"; go.rel = "noopener noreferrer"; go.textContent = "프로필 ↗";
+      li.append(av, who, go);
+      frag.appendChild(li);
+    }
+    list.appendChild(frag);
+
+    const q = $("q").value.trim();
+    $("count").textContent = q
+      ? "검색 결과 " + items.length.toLocaleString() + "명 / 전체 " + notFollowingBack.length.toLocaleString() + "명"
+      : "최근 팔로우한 순 · " + items.length.toLocaleString() + "명";
+    const empty = $("empty");
+    empty.classList.toggle("hidden", items.length > 0);
+    empty.textContent = notFollowingBack.length === 0 ? "🎉 모두 맞팔 중이에요!" : "검색 결과가 없어요.";
+    $("copy").disabled = items.length === 0;
+  }
+
+  function setMsg(text, type) {
+    msg.textContent = text || "";
+    msg.style.whiteSpace = "pre-line";
+    msg.className = "msg" + (type ? " " + type : "");
+  }
+
+  let toastTimer;
+  function toast(text) {
+    const t = $("toast");
+    t.textContent = text; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback */ }
+    }
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", "");
+    ta.style.position = "fixed"; ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  // ---------- 이벤트 ----------
+  fileInput.addEventListener("change", () => handleFiles(fileInput.files));
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); drop.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => {
+    e.preventDefault(); drop.classList.remove("over");
+  }));
+  drop.addEventListener("drop", (e) => handleFiles(e.dataTransfer && e.dataTransfer.files));
+  // 영역 밖에 떨어뜨려도 브라우저가 파일을 열지 않도록
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+
+  $("q").addEventListener("input", renderList);
+  $("copy").addEventListener("click", async () => {
+    const items = filtered();
+    const ok = await copyText(items.map((it) => it.id).join("\n"));
+    toast(ok ? items.length.toLocaleString() + "명 복사했어요" : "복사에 실패했어요");
+  });
+  $("reset").addEventListener("click", () => {
+    sources.clear(); notFollowingBack = []; $("q").value = ""; render();
+  });
+})();
+</script>
+</body>
+</html>
